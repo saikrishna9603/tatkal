@@ -1,0 +1,39 @@
+{
+  "name": "tatkal-booking-system",
+  "version": "1.0.0",
+  "description": "Next-generation IRCTC-style train booking system with multi-agent AI architecture",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "format": "prettier --write .",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "next": "^15.1.0",
+    "typescript": "^5.3.3",
+    "tailwindcss": "^3.4.1",
+    "postcss": "^8.4.32",
+    "autoprefixer": "^10.4.16",
+    "framer-motion": "^10.16.16",
+    "jspdf": "^2.5.1",
+    "qrcode.react": "^1.0.1",
+    "axios": "^1.6.3",
+    "zustand": "^4.4.7",
+    "date-fns": "^2.30.0",
+    "lucide-react": "^0.400.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@types/node": "^20.10.6",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "^15.1.0",
+    "prettier": "^3.1.1",
+    "@tailwindcss/forms": "^0.5.7"
+  }
+}
