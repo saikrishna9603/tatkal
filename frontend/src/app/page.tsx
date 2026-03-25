@@ -29,7 +29,23 @@ export default function DashboardPage() {
   useEffect(() => {
     const userData = localStorage.getItem("user");
     if (!userData) {
-      router.push("/login");
+      // Auto-login with demo user for demo mode
+      const demoUser = {
+        user_id: 'demo_user_001',
+        email: 'user@example.com',
+        full_name: 'John Doe',
+        phone: '+919876543210'
+      };
+      localStorage.setItem("user", JSON.stringify(demoUser));
+      localStorage.setItem("access_token", "demo_token_12345");
+      setUser(demoUser);
+      setStats({
+        total_bookings: 0,
+        successful_bookings: 0,
+        cancelled_bookings: 0,
+        total_money_spent: 0,
+      });
+      setLoading(false);
       return;
     }
 
@@ -231,7 +247,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Link
             href="/insights"
             className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition text-center"
@@ -248,6 +264,15 @@ export default function DashboardPage() {
             <div className="text-4xl mb-2">👤</div>
             <h3 className="font-bold text-gray-800">Profile</h3>
             <p className="text-sm text-gray-600 mt-1">Manage your account</p>
+          </Link>
+
+          <Link
+            href="/ml-comparison"
+            className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition text-center"
+          >
+            <div className="text-4xl mb-2">🤖📊</div>
+            <h3 className="font-bold text-gray-800">AI Comparison</h3>
+            <p className="text-sm text-gray-600 mt-1">Agentic vs ML</p>
           </Link>
 
           <Link

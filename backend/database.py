@@ -3,7 +3,10 @@ MongoDB Atlas Database Connection and Operations
 """
 
 from motor.motor_asyncio import AsyncIOMotorClient
-from backend.config import MONGODB_URL, DB_NAME, COLLECTIONS
+try:
+    from backend.config import MONGODB_URL, DB_NAME, COLLECTIONS
+except ImportError:
+    from config import MONGODB_URL, DB_NAME, COLLECTIONS
 from typing import List, Dict, Optional, Any
 import asyncio
 

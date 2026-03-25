@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import API from '@/lib/api';
 import Link from 'next/link';
 
 export default function ProfilePage() {
@@ -15,7 +16,20 @@ export default function ProfilePage() {
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (!userData) {
-      router.push('/login');
+      // Auto-login with demo user
+      const demoUser = {
+        user_id: 'demo_user_001',
+        full_name: 'John Doe',
+        email: 'user@example.com',
+        phone: '+919876543210',
+        gender: 'Male',
+        date_of_birth: '1995-01-15'
+      };
+      localStorage.setItem('user', JSON.stringify(demoUser));
+      localStorage.setItem('access_token', 'demo_token_12345');
+      setUser(demoUser);
+      setFormData(demoUser);
+      setLoading(false);
       return;
     }
 
@@ -32,29 +46,17 @@ export default function ProfilePage() {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
+    if (!user) return;
+    
     try {
-      const token = localStorage.getItem('access_token');
-      const response = await fetch('http://localhost:8001/api/profile/update', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (response.ok) {
-        const updated = await response.json();
-        localStorage.setItem('user', JSON.stringify(updated));
-        setUser(updated);
-        setEditing(false);
-        setMessage('✅ Profile updated successfully!');
-        setTimeout(() => setMessage(''), 3000);
-      } else {
-        setMessage('❌ Failed to update profile');
-      }
-    } catch (error) {
-      setMessage('❌ Error updating profile');
+      const updated = await API.updateProfile(user.user_id, formData) as any;
+      localStorage.setItem('user', JSON.stringify(updated));
+      setUser(updated);
+      setEditing(false);
+      setMessage('✅ Profile updated successfully!');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error: any) {
+      setMessage('❌ Error updating profile: ' + (error.message || ''));
     }
   };
 

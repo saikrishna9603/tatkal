@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import API from '@/lib/api';
 
 export default function LiveAgentPage() {
   const router = useRouter();
@@ -43,7 +44,16 @@ export default function LiveAgentPage() {
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (!userData) {
-      router.push('/login');
+      // Auto-login with demo user
+      const demoUser = {
+        user_id: 'demo_user_001',
+        full_name: 'John Doe',
+        email: 'user@example.com',
+        phone: '+919876543210'
+      };
+      localStorage.setItem('user', JSON.stringify(demoUser));
+      localStorage.setItem('access_token', 'demo_token_12345');
+      setUser(demoUser);
       return;
     }
     setUser(JSON.parse(userData));
@@ -52,37 +62,26 @@ export default function LiveAgentPage() {
   const startAgentOrchestration = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('access_token');
-      const response = await fetch('http://localhost:8001/api/agents/orchestrate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+      const response = await API.orchestrateBooking({
+        scenario: 'find_best_tatkal_trains',
+        parameters: {
+          from: 'Delhi',
+          to: 'Mumbai',
+          date: new Date().toISOString().split('T')[0],
         },
-        body: JSON.stringify({
-          scenario: 'find_best_tatkal_trains',
-          parameters: {
-            from: 'Delhi',
-            to: 'Mumbai',
-            date: new Date().toISOString().split('T')[0],
-          },
-        }),
-      });
+      }) as any;
 
-      if (response.ok) {
-        const data = await response.json();
-        setRecommendations(data.recommendations || mockRecommendations);
+      setRecommendations(response.recommendations || mockRecommendations);
 
-        // Simulate agent progression
-        setAgents((prev) =>
-          prev.map((agent, idx) => ({
-            ...agent,
-            progress: 100,
-            status: 'completed',
-            message: `${agent.name.split(' ')[0]} analysis complete`,
-          }))
-        );
-      }
+      // Simulate agent progression
+      setAgents((prev) =>
+        prev.map((agent, idx) => ({
+          ...agent,
+          progress: 100,
+          status: 'completed',
+          message: `${agent.name.split(' ')[0]} analysis complete`,
+        }))
+      );
     } catch (error) {
       console.error('Error:', error);
     } finally {

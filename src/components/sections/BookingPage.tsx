@@ -20,7 +20,7 @@ export default function BookingPage({ train, searchParams, onBack }: BookingPage
   const [bookingState, setBookingState] = useState('waiting'); // waiting, booking, completed, failed
   const [bookingLogs, setBookingLogs] = useState<string[]>([]);
   const [currentBooking, setCurrentBooking] = useState<any>(null);
-  const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
+  const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0, totalSeconds: 0 });
   const [bookingStarted, setBookingStarted] = useState(false);
 
   const tatkalTime = searchParams.tatkalTime || '08:00';

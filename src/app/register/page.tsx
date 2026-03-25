@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import API from '@/lib/api';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -34,6 +35,17 @@ export default function RegisterPage() {
     });
   };
 
+  const normalizePhone = (phone: string) => {
+    const compact = phone.replace(/\s|-/g, '');
+    const digitsOnly = compact.replace(/\D/g, '');
+
+    if (digitsOnly.length === 12 && digitsOnly.startsWith('91')) {
+      return `+${digitsOnly}`;
+    }
+
+    return digitsOnly;
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -63,25 +75,60 @@ export default function RegisterPage() {
       return;
     }
 
+    const normalizedPhone = normalizePhone(formData.phone);
+    if (!/^(\+91)?[6-9]\d{9}$/.test(normalizedPhone)) {
+      setError('Enter a valid Indian mobile number (e.g., 9876543210 or +919876543210)');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await fetch('http://localhost:8001/api/auth/register', {
+      const registrationUrl = '/api/auth/register';
+      console.log('📍 DEBUGGING REGISTRATION:');
+      console.log('API URL from ENV:', process.env.NEXT_PUBLIC_API_URL);
+      console.log('Using Next.js proxy endpoint');
+      console.log('Full Registration URL:', registrationUrl);
+      console.log('Request payload:', {
+        full_name: formData.full_name,
+        email: formData.email,
+        phone: normalizedPhone,
+      });
+      
+      const response = await fetch(registrationUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
         body: JSON.stringify({
           full_name: formData.full_name,
           email: formData.email,
-          phone: formData.phone,
+          phone: normalizedPhone,
           password: formData.password,
           confirm_password: formData.confirm_password,
         }),
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error('Failed to parse response:', jsonError);
+        console.log('Response status:', response.status);
+        console.log('Response headers:', Object.fromEntries(response.headers));
+        setError(`Server error (${response.status}): Invalid response format`);
+        return;
+      }
+
+      console.log('✅ Response received:', { status: response.status, data });
 
       if (!response.ok) {
         const errorMsg = Array.isArray(data.detail) 
           ? data.detail.map((e: any) => e.msg).join('; ')
-          : data.detail;
+          : typeof data.detail === 'string'
+          ? data.detail
+          : JSON.stringify(data);
+        console.error('Registration failed:', data);
         setError(errorMsg || 'Registration failed');
         return;
       }
@@ -89,7 +136,12 @@ export default function RegisterPage() {
       setSuccess('Registration successful! Redirecting to login...');
       setTimeout(() => router.push('/login'), 2000);
     } catch (err: any) {
-      setError(err.message || 'An error occurred');
+      console.error('Registration error:', err);
+      if (err instanceof TypeError && err.message.includes('fetch')) {
+        setError('Failed to connect to server. Make sure the backend is running and reachable.');
+      } else {
+        setError(err.message || 'An unexpected error occurred');
+      }
     } finally {
       setLoading(false);
     }

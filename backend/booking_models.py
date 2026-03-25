@@ -33,8 +33,21 @@ class PassengerDetails(BaseModel):
     gender: str = Field(..., pattern="^(M|F|O)$")  # Male, Female, Other
     document_type: str  # Aadhaar, Passport, PAN, DL, etc.
     document_number: str
-    phone: str = Field(..., pattern="^(\\+\\d{1,3})?[6-9]\\d{9}$")
+    phone: str = Field(..., min_length=10, max_length=16)
     email: Optional[str] = None
+
+    @validator("phone")
+    def validate_phone(cls, value: str) -> str:
+        compact = value.replace(" ", "").replace("-", "")
+        digits = "".join(ch for ch in compact if ch.isdigit())
+
+        if len(digits) == 10 and digits[0] in "6789":
+            return digits
+
+        if len(digits) == 12 and digits.startswith("91") and digits[2] in "6789":
+            return f"+{digits}"
+
+        raise ValueError("Phone must be a valid Indian mobile number")
 
 
 class SeatSelection(BaseModel):
@@ -164,6 +177,7 @@ class CancellationResponse(BaseModel):
     status: str
     refund_status: PaymentStatusEnum
     timestamp: datetime
+    confirmation_details: Optional[Dict[str, Any]] = None  # For upgraded bookings info
 
 
 class TatkalStatusUpdate(BaseModel):

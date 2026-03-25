@@ -20,10 +20,21 @@ cd ..
 
 timeout /t 2 /nobreak
 
+REM Determine frontend working directory (prioritize frontend/ if it has its own package)
+set "FRONTEND_DIR="
+if exist "frontend\package.json" (
+	set "FRONTEND_DIR=frontend"
+) else if exist "package.json" (
+	set "FRONTEND_DIR=."
+) else (
+	echo ❌ Frontend package.json not found
+	exit /b 1
+)
+
 REM Start frontend
-cd frontend
-start "Frontend Web (Port 3000)" cmd /k "npm run dev"
-cd ..
+cd /d "%~dp0%FRONTEND_DIR%"
+start "Frontend Web (Port 3000)" cmd /k "set NEXT_PUBLIC_API_URL=http://127.0.0.1:8000 && npm run dev -- --hostname 127.0.0.1 --port 3000"
+cd /d "%~dp0"
 
 timeout /t 3 /nobreak
 

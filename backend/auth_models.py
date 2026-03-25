@@ -2,7 +2,7 @@
 User Authentication and Profile Models
 """
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, validator
 from datetime import datetime
 from typing import Optional, List
 from enum import Enum
@@ -13,9 +13,25 @@ class UserRegisterRequest(BaseModel):
     """User registration request"""
     full_name: str = Field(..., min_length=2, max_length=100)
     email: EmailStr
-    phone: str = Field(..., pattern=r'^(\+\d{1,3})?[6-9]\d{9}$')
+    phone: str = Field(..., min_length=10, max_length=16)
     password: str = Field(..., min_length=8)
     confirm_password: str
+
+    @validator("phone")
+    def validate_phone(cls, value: str) -> str:
+        """Accept 10-digit Indian numbers with optional country code and separators."""
+        compact = value.replace(" ", "").replace("-", "")
+        digits = "".join(ch for ch in compact if ch.isdigit())
+
+        # Accept plain 10-digit local numbers (starting 6-9)
+        if len(digits) == 10 and digits[0] in "6789":
+            return digits
+
+        # Accept +91xxxxxxxxxx / 91xxxxxxxxxx
+        if len(digits) == 12 and digits.startswith("91") and digits[2] in "6789":
+            return f"+{digits}"
+
+        raise ValueError("Phone must be a valid Indian mobile number")
     
     class Config:
         example = {

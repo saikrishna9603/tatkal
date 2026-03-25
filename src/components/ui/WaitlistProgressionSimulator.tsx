@@ -4,6 +4,12 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { TrendingDown, CheckCircle2 } from 'lucide-react';
 
+interface Stage {
+  position: number;
+  status: string;
+  label: string;
+}
+
 interface WaitlistProgressionSimulatorProps {
   initialPosition: number;
   trainName: string;
@@ -13,12 +19,12 @@ export default function WaitlistProgressionSimulator({
   initialPosition,
   trainName,
 }: WaitlistProgressionSimulatorProps) {
-  const [progression, setProgression] = useState<Array<{ stage: number; position: number; status: string }>>([]);
+  const [progression, setProgression] = useState<Stage[]>([]);
   const [currentStage, setCurrentStage] = useState(0);
 
   useEffect(() => {
     // Simulate waitlist progression
-    const stages = [
+    const stages: Stage[] = [
       { position: initialPosition, status: 'WAITLIST', label: `WL ${initialPosition}` },
       {
         position: Math.floor(initialPosition * 0.7),

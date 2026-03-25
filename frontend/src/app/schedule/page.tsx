@@ -30,6 +30,11 @@ export default function TrainSearchPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
+  const [sortBy, setSortBy] = useState("departure_time");
+  const [pageSize, setPageSize] = useState(10);
 
   const indianCities = [
     "Delhi", "Mumbai", "Bangalore", "Hyderabad", "Chennai",
@@ -37,14 +42,15 @@ export default function TrainSearchPage() {
     "Chandigarh", "Indore", "Bhopal", "Visakhapatnam", "Kochi"
   ];
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSearch = async (e: React.FormEvent, page: number = 1) => {
+    e?.preventDefault();
     setLoading(true);
     setError("");
+    setCurrentPage(page);
 
     try {
       const response = await fetch(
-        `http://localhost:8001/api/trains/search?from_station=${fromStation}&to_station=${toStation}&departure_date=${departureDate}&seat_class=${seatClass}`
+        `http://localhost:8001/api/trains/search?from_station=${fromStation}&to_station=${toStation}&departure_date=${departureDate}&seat_class=${seatClass}&page=${page}&limit=${pageSize}&sort_by=${sortBy}`
       );
 
       const data = await response.json();
@@ -58,6 +64,8 @@ export default function TrainSearchPage() {
       }
 
       setTrains(data.trains || []);
+      setTotalPages(data.total_pages || 1);
+      setTotalResults(data.total_results || 0);
     } catch (err: any) {
       setError(err.message || "An error occurred");
     } finally {
@@ -66,9 +74,9 @@ export default function TrainSearchPage() {
   };
 
   const swapStations = () => {
-    [fromStation, toStation] = [toStation, fromStation];
+    const currentFrom = fromStation;
     setFromStation(toStation);
-    setToStation(fromStation);
+    setToStation(currentFrom);
   };
 
   return (
@@ -188,6 +196,54 @@ export default function TrainSearchPage() {
                 ⚙️ Filters
               </button>
             </div>
+
+            {/* Sorting & Filter Options */}
+            {showFilters && (
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      📊 Sort By
+                    </label>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="departure_time">Departure Time</option>
+                      <option value="price">Price (Low to High)</option>
+                      <option value="duration">Duration</option>
+                      <option value="rating">Rating (High to Low)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      📄 Results Per Page
+                    </label>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => setPageSize(parseInt(e.target.value))}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="5">5 Trains</option>
+                      <option value="10">10 Trains</option>
+                      <option value="20">20 Trains</option>
+                      <option value="50">50 Trains</option>
+                    </select>
+                  </div>
+                  <div className="flex items-end">
+                    <button
+                      type="button"
+                      onClick={(e) => handleSearch(e as any, 1)}
+                      disabled={loading}
+                      className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-lg transition disabled:opacity-50"
+                    >
+                      Apply Filters
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </form>
         </div>
       </div>
@@ -204,86 +260,141 @@ export default function TrainSearchPage() {
       {/* Train Results */}
       <div className="max-w-7xl mx-auto mt-8 px-4 pb-12">
         {trains.length > 0 ? (
-          <div className="grid gap-4">
-            {trains.map((train) => (
-              <div key={train._id} className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  {/* Train Info */}
-                  <div>
-                    <div className="text-lg font-bold text-gray-800">{train.name}</div>
-                    <div className="text-sm text-gray-600">#{train.number}</div>
-                    <div className="mt-2 flex items-center gap-2">
-                      <span className="text-yellow-500">⭐</span>
-                      <span className="text-sm font-semibold">{train.rating}</span>
-                      <span className="text-xs text-gray-500">({train.reviews} reviews)</span>
-                    </div>
-                  </div>
+          <>
+            {/* Results Summary */}
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-gray-700">
+                Showing <strong>{trains.length}</strong> of <strong>{totalResults}</strong> trains available • 
+                Page <strong>{currentPage}</strong> of <strong>{totalPages}</strong>
+              </p>
+            </div>
 
-                  {/* Timing */}
-                  <div>
-                    <div className="text-2xl font-bold text-gray-800">{train.departureTime}</div>
-                    <div className="text-xs text-gray-600">Departure</div>
-                    <div className="mt-4 text-2xl font-bold text-gray-800">{train.arrivalTime}</div>
-                    <div className="text-xs text-gray-600">Arrival</div>
-                    <div className="mt-2 text-sm text-blue-600 font-semibold">{train.duration}</div>
-                  </div>
-
-                  {/* Route */}
-                  <div>
-                    <div className="text-sm text-gray-600">Route</div>
-                    <div className="font-bold text-gray-800">{train.from}</div>
-                    <div className="text-center text-gray-400 py-2">↓</div>
-                    <div className="font-bold text-gray-800">{train.to}</div>
-                  </div>
-
-                  {/* Availability & Price */}
-                  <div>
-                    <div className="text-sm text-gray-600 mb-2">Seats Available</div>
-                    <div className="space-y-2 mb-4">
-                      <div className="flex items-center justify-between text-xs">
-                        <span>✓ Confirmed</span>
-                        <span className="font-bold text-green-600">{train.availability.confirmed}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span>◐ RAC</span>
-                        <span className="font-bold text-yellow-600">{train.availability.rac}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span>✗ Waitlist</span>
-                        <span className="font-bold text-red-600">{train.availability.waitlist}</span>
+            {/* Train Cards Grid */}
+            <div className="grid gap-4">
+              {trains.map((train) => (
+                <div key={train._id} className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    {/* Train Info */}
+                    <div>
+                      <div className="text-lg font-bold text-gray-800">{train.name}</div>
+                      <div className="text-sm text-gray-600">#{train.number}</div>
+                      <div className="mt-2 flex items-center gap-2">
+                        <span className="text-yellow-500">⭐</span>
+                        <span className="text-sm font-semibold">{train.rating}</span>
+                        <span className="text-xs text-gray-500">({train.reviews} reviews)</span>
                       </div>
                     </div>
 
-                    {/* Price & Book Button */}
-                    <div className="border-t pt-3">
-                      <div className="text-xs text-gray-600">Price per seat</div>
-                      <div className="text-2xl font-bold text-gray-800">
-                        ₹{train.price[seatClass] || train.price["AC2"]}
+                    {/* Timing */}
+                    <div>
+                      <div className="text-2xl font-bold text-gray-800">{train.departureTime}</div>
+                      <div className="text-xs text-gray-600">Departure</div>
+                      <div className="mt-4 text-2xl font-bold text-gray-800">{train.arrivalTime}</div>
+                      <div className="text-xs text-gray-600">Arrival</div>
+                      <div className="mt-2 text-sm text-blue-600 font-semibold">{train.duration}</div>
+                    </div>
+
+                    {/* Route */}
+                    <div>
+                      <div className="text-sm text-gray-600">Route</div>
+                      <div className="font-bold text-gray-800">{train.from}</div>
+                      <div className="text-center text-gray-400 py-2">↓</div>
+                      <div className="font-bold text-gray-800">{train.to}</div>
+                    </div>
+
+                    {/* Availability & Price */}
+                    <div>
+                      <div className="text-sm text-gray-600 mb-2">Seats Available</div>
+                      <div className="space-y-2 mb-4">
+                        <div className="flex items-center justify-between text-xs">
+                          <span>✓ Confirmed</span>
+                          <span className="font-bold text-green-600">{train.availability.confirmed}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span>◐ RAC</span>
+                          <span className="font-bold text-yellow-600">{train.availability.rac}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span>✗ Waitlist</span>
+                          <span className="font-bold text-red-600">{train.availability.waitlist}</span>
+                        </div>
                       </div>
-                      <Link
-                        href={`/booking/${train._id}`}
-                        className="w-full mt-3 block text-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-2 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition"
+
+                      {/* Price & Book Button */}
+                      <div className="border-t pt-3">
+                        <div className="text-xs text-gray-600">Price per seat</div>
+                        <div className="text-2xl font-bold text-gray-800">
+                          ₹{train.price[seatClass] || train.price["AC2"]}
+                        </div>
+                        <Link
+                          href={`/booking/${train._id}`}
+                          className="w-full mt-3 block text-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-2 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition"
+                        >
+                          Book Now
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Amenities */}
+                  <div className="mt-4 pt-4 border-t">
+                    <div className="text-xs text-gray-600 mb-2">Amenities</div>
+                    <div className="flex flex-wrap gap-2">
+                      {train.amenities.map((amenity) => (
+                        <span key={amenity} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
+                          {amenity}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="mt-8 flex items-center justify-center gap-2 flex-wrap">
+                <button
+                  disabled={currentPage === 1 || loading}
+                  onClick={(e) => handleSearch(e as any, currentPage - 1)}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  ← Previous
+                </button>
+
+                {/* Page Numbers */}
+                <div className="flex gap-1">
+                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                    const page = currentPage > 3 ? currentPage - 2 + i : i + 1;
+                    if (page > totalPages) return null;
+                    return (
+                      <button
+                        key={page}
+                        onClick={(e) => handleSearch(e as any, page)}
+                        disabled={loading}
+                        className={`px-3 py-2 rounded-lg transition ${
+                          currentPage === page
+                            ? "bg-indigo-600 text-white font-semibold"
+                            : "bg-gray-200 hover:bg-gray-300"
+                        } disabled:opacity-50`}
                       >
-                        Book Now
-                      </Link>
-                    </div>
-                  </div>
+                        {page}
+                      </button>
+                    );
+                  })}
+                  {totalPages > 5 && <span className="text-gray-600">...</span>}
                 </div>
 
-                {/* Amenities */}
-                <div className="mt-4 pt-4 border-t">
-                  <div className="text-xs text-gray-600 mb-2">Amenities</div>
-                  <div className="flex flex-wrap gap-2">
-                    {train.amenities.map((amenity) => (
-                      <span key={amenity} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
-                        {amenity}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+                <button
+                  disabled={currentPage === totalPages || loading}
+                  onClick={(e) => handleSearch(e as any, currentPage + 1)}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  Next →
+                </button>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         ) : (
           <div className="text-center py-12">
             <div className="text-4xl mb-4">🚂</div>

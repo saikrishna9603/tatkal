@@ -2,7 +2,7 @@
 PDF Agent - Generates E-tickets and booking confirmations
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 import base64
 
@@ -323,6 +323,3 @@ class PDFAgent:
                 "error": str(e)
             }
 
-
-# Import for timedelta
-from datetime import timedelta

@@ -21,6 +21,11 @@ class HealthChecker:
             'files': {},
             'dependencies': {'backend': 'unknown', 'frontend': 'unknown'},
         }
+
+    @staticmethod
+    def _exists_any(paths):
+        """Return True if any candidate path exists."""
+        return any(Path(p).exists() for p in paths)
     
     def check_python(self):
         """Check Python installation and version"""
@@ -43,8 +48,10 @@ class HealthChecker:
                 self.results['nodejs']['version'] = node_version
                 self.results['nodejs']['status'] = 'OK'
                 print(f"✅ Node.js {node_version}")
-                
-                npm_result = subprocess.run(['npm', '--version'], capture_output=True, text=True, timeout=5)
+
+                # On Windows, npm is typically npm.cmd
+                npm_cmd = 'npm.cmd' if os.name == 'nt' else 'npm'
+                npm_result = subprocess.run([npm_cmd, '--version'], capture_output=True, text=True, timeout=5)
                 if npm_result.returncode == 0:
                     npm_version = npm_result.stdout.strip()
                     self.results['npm']['version'] = npm_version
@@ -59,33 +66,33 @@ class HealthChecker:
         """Check if required files exist"""
         required_files = {
             'Backend': [
-                'backend/main_api.py',
-                'backend/requirements.txt',
+                ['backend/main_api.py'],
+                ['backend/requirements.txt'],
             ],
             'Frontend': [
-                'frontend/package.json',
-                'frontend/tsconfig.json',
-                'frontend/next.config.js',
+                ['package.json', 'frontend/package.json'],
+                ['tsconfig.json', 'frontend/tsconfig.json'],
+                ['next.config.js', 'frontend/next.config.js'],
             ],
             'Pages': [
-                'frontend/src/app/login/page.tsx',
-                'frontend/src/app/register/page.tsx',
-                'frontend/src/app/schedule/page.tsx',
-                'frontend/src/app/profile/page.tsx',
-                'frontend/src/app/booking/[id]/page.tsx',
-                'frontend/src/app/booking/tatkal/page.tsx',
-                'frontend/src/app/live-agent/page.tsx',
+                ['src/app/login/page.tsx', 'frontend/src/app/login/page.tsx'],
+                ['src/app/register/page.tsx', 'frontend/src/app/register/page.tsx'],
+                ['src/app/schedule/page.tsx', 'frontend/src/app/schedule/page.tsx'],
+                ['src/app/profile/page.tsx', 'frontend/src/app/profile/page.tsx'],
+                ['src/app/booking/[id]/page.tsx', 'frontend/src/app/booking/[id]/page.tsx'],
+                ['src/app/booking/tatkal/page.tsx', 'frontend/src/app/booking/tatkal/page.tsx'],
+                ['src/app/live-agent/page.tsx', 'frontend/src/app/live-agent/page.tsx'],
             ],
             'Configuration': [
-                'COMPLETE_STARTUP_GUIDE.md',
-                'START_ALL.bat',
-                'startup.py',
+                ['COMPLETE_STARTUP_GUIDE.md'],
+                ['START_ALL.bat'],
+                ['startup.py'],
             ],
         }
         
         all_present = True
         for category, files in required_files.items():
-            present = sum(1 for f in files if Path(f).exists())
+            present = sum(1 for candidates in files if self._exists_any(candidates))
             total = len(files)
             status = "✅" if present == total else "⚠️"
             print(f"{status} {category}: {present}/{total} files")
@@ -93,9 +100,9 @@ class HealthChecker:
             
             if present < total:
                 all_present = False
-                for f in files:
-                    if not Path(f).exists():
-                        print(f"    Missing: {f}")
+                for candidates in files:
+                    if not self._exists_any(candidates):
+                        print(f"    Missing any of: {', '.join(candidates)}")
         
         return all_present
     
@@ -103,14 +110,13 @@ class HealthChecker:
         """Check if dependencies are installable"""
         print("\n📦 Dependency Check:")
         
-        # Check backend requirements
-        try:
-            import requirements
-            print("✅ Backend requirements readable")
+        # Check backend requirements file presence
+        if Path('backend/requirements.txt').exists():
+            print("✅ Backend requirements file found")
             self.results['dependencies']['backend'] = 'OK'
-        except:
-            print("⚠️  Backend requirements not installed yet (normal, will install on startup)")
-            self.results['dependencies']['backend'] = 'NOT_INSTALLED'
+        else:
+            print("⚠️  Backend requirements file missing")
+            self.results['dependencies']['backend'] = 'MISSING'
         
         # Check frontend node_modules
         if Path('frontend/node_modules').exists():

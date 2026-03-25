@@ -7,6 +7,7 @@ REM and verifies all systems are working correctly
 
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
+set "FRONTEND_DIR="
 
 echo.
 echo ╔════════════════════════════════════════════════════╗
@@ -47,14 +48,21 @@ echo ✅ Backend requirements file found
 
 REM Check frontend dependencies
 echo [4/5] Checking frontend dependencies...
-if not exist "frontend\package.json" (
-    echo ❌ frontend\package.json not found
+if exist "frontend\package.json" (
+    set "FRONTEND_DIR=frontend"
+) else if exist "package.json" (
+    set "FRONTEND_DIR=."
+) else (
+    echo ❌ package.json not found in frontend\ or workspace root
     exit /b 1
 )
-echo ✅ Frontend package.json found
+echo ✅ Frontend package.json found in %FRONTEND_DIR%
 
 echo [5/5] Starting servers...
 echo.
+
+REM Enforce a consistent local API URL for frontend runtime
+set "NEXT_PUBLIC_API_URL=http://127.0.0.1:8000"
 
 REM Start Backend in new window
 echo Starting Backend API Server on port 8000...
@@ -65,9 +73,9 @@ timeout /t 3 /nobreak
 
 REM Start Frontend in new window
 echo Starting Frontend Development Server on port 3000...
-cd frontend
-start "Frontend - Tatkal Web App (Port 3000)" cmd /k "npm run dev"
-cd ..
+cd /d "%~dp0%FRONTEND_DIR%"
+start "Frontend - Tatkal Web App (Port 3000)" cmd /k "set NEXT_PUBLIC_API_URL=http://127.0.0.1:8000 && npm run dev"
+cd /d "%~dp0"
 timeout /t 3 /nobreak
 
 REM Wait and check if servers are running

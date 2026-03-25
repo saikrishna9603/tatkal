@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import API from '@/lib/api';
 
 export default function Home() {
   const router = useRouter();
@@ -10,14 +11,28 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     total_bookings: 0,
-    successful_bookings: 0,
-    total_money_spent: 0,
+    total_passengers: 0,
+    total_revenue: 0,
+    total_tatkal_bookings: 0,
   });
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (!userData) {
-      router.push('/login');
+      // Auto-login with demo user for demo mode
+      const demoUser = {
+        user_id: 'demo_user_001',
+        full_name: 'John Doe',
+        email: 'user@example.com',
+        phone: '+919876543210',
+        is_verified: true,
+        member_since: new Date().toISOString(),
+        total_bookings: 0
+      };
+      localStorage.setItem('user', JSON.stringify(demoUser));
+      localStorage.setItem('access_token', 'demo_token_12345');
+      setUser(demoUser);
+      setLoading(false);
       return;
     }
 
@@ -25,6 +40,24 @@ export default function Home() {
     setUser(parsedUser);
     setLoading(false);
   }, [router]);
+
+  useEffect(() => {
+    const loadDashboardStats = async () => {
+      try {
+        const data = await API.getDashboardStats() as any;
+        setStats({
+          total_bookings: Number(data?.total_bookings || 0),
+          total_passengers: Number(data?.total_passengers || 0),
+          total_revenue: Number(data?.total_revenue || 0),
+          total_tatkal_bookings: Number(data?.total_tatkal_bookings || 0),
+        });
+      } catch {
+        // Keep zero values when backend stats are unavailable.
+      }
+    };
+
+    loadDashboardStats();
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('access_token');
@@ -81,22 +114,20 @@ export default function Home() {
 
           <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition">
             <div className="text-4xl mb-2">✅</div>
-            <p className="text-gray-600 text-sm">Successful</p>
-            <p className="text-3xl font-bold text-green-600">{stats.successful_bookings}</p>
+            <p className="text-gray-600 text-sm">Total Passengers</p>
+            <p className="text-3xl font-bold text-green-600">{stats.total_passengers}</p>
           </div>
 
           <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition">
             <div className="text-4xl mb-2">💰</div>
-            <p className="text-gray-600 text-sm">Total Spent</p>
-            <p className="text-3xl font-bold text-indigo-600">₹{stats.total_money_spent}</p>
+            <p className="text-gray-600 text-sm">Total Revenue</p>
+            <p className="text-3xl font-bold text-indigo-600">₹{stats.total_revenue}</p>
           </div>
 
           <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition">
             <div className="text-4xl mb-2">🚀</div>
-            <p className="text-gray-600 text-sm">Tatkal Success</p>
-            <p className="text-3xl font-bold text-orange-600">
-              {stats.total_bookings ? Math.round((stats.successful_bookings / stats.total_bookings) * 100) : 0}%
-            </p>
+            <p className="text-gray-600 text-sm">Tatkal Bookings</p>
+            <p className="text-3xl font-bold text-orange-600">{stats.total_tatkal_bookings}</p>
           </div>
         </div>
 
@@ -172,6 +203,15 @@ export default function Home() {
                 <div className="text-3xl mb-2">🤖</div>
                 <h4 className="font-bold text-gray-800">AI Agent</h4>
                 <p className="text-sm text-gray-600">Smart recommendations</p>
+              </Link>
+
+              <Link
+                href="/ml-comparison"
+                className="p-4 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-400 transition text-center"
+              >
+                <div className="text-3xl mb-2">📊</div>
+                <h4 className="font-bold text-gray-800">AI Comparison</h4>
+                <p className="text-sm text-gray-600">Agentic vs Traditional ML</p>
               </Link>
 
               <Link
