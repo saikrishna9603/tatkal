@@ -1,10 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Only use static export in production builds, not in dev server
-  output: process.env.NODE_ENV === 'production' ? 'export' : undefined,
-  basePath: process.env.NODE_ENV === 'production' ? '/RAILWAY' : '',
-  assetPrefix: process.env.NODE_ENV === 'production' ? '/RAILWAY/' : '',
+  // Vercel handles deployment automatically (no static export needed)
   typescript: {
     tsconfigPath: './tsconfig.json',
   },
