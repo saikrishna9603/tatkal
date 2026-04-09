@@ -57,6 +57,6 @@ COLLECTIONS = {
     "agent_activities": "agent_activities",
 }
 
-print(f"✓ FastAPI Backend Initialized")
-print(f"✓ MongoDB URL configured")
-print(f"✓ CORS enabled for frontend")
+print("[OK] FastAPI Backend Initialized")
+print("[OK] MongoDB URL configured")
+print("[OK] CORS enabled for frontend")

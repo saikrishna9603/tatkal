@@ -3,8 +3,8 @@ const nextConfig = {
   reactStrictMode: true,
   // Only use static export in production builds, not in dev server
   output: process.env.NODE_ENV === 'production' ? 'export' : undefined,
-  basePath: '/RAILWAY',
-  assetPrefix: '/RAILWAY/',
+  basePath: process.env.NODE_ENV === 'production' ? '/RAILWAY' : '',
+  assetPrefix: process.env.NODE_ENV === 'production' ? '/RAILWAY/' : '',
   typescript: {
     tsconfigPath: './tsconfig.json',
   },

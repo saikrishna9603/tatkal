@@ -72,9 +72,9 @@ bookings_collection = None
 sessions_collection = None
 
 # Initialize trains data immediately at module load (don't wait for startup event)
-print("📚 Pre-loading 1000 trains data...")
+print("[*] Pre-loading 1000 trains data...")
 trains_data: List[Dict] = generate_trains_data(1000)
-print(f"✅ Trains data ready: {len(trains_data)} trains loaded")
+print(f"[OK] Trains data ready: {len(trains_data)} trains loaded")
 
 # In-memory fallback (for when MongoDB is unavailable)
 users_db: Dict[str, Dict] = {}
@@ -94,11 +94,11 @@ async def startup_event():
     global users_collection, bookings_collection, sessions_collection
     
     print("\n" + "="*60)
-    print("🚀 STARTING TATKAL BOOKING SYSTEM")
+    print("[START] TATKAL BOOKING SYSTEM")
     print("="*60)
     
     # Connect to MongoDB
-    print("\n📡 Connecting to MongoDB Atlas...")
+    print("\n[*] Connecting to MongoDB Atlas...")
     await MongoDBClient.connect_db()
     
     # Get MongoDB collections
@@ -106,40 +106,40 @@ async def startup_event():
         users_collection = MongoDBClient.get_collection("users")
         bookings_collection = MongoDBClient.get_collection("bookings")
         sessions_collection = MongoDBClient.get_collection("sessions")
-        print("✅ MongoDB collections initialized:")
-        print("   • users")
-        print("   • bookings")  
-        print("   • sessions")
+        print("[OK] MongoDB collections initialized:")
+        print("   - users")
+        print("   - bookings")  
+        print("   - sessions")
     except Exception as e:
-        print(f"⚠️  MongoDB collections unavailable: {e}")
-        print("   Using in-memory fallback")
+        print(f"[WARN] MongoDB collections unavailable: {e}")
+        print("       Using in-memory fallback")
     
     # Trains data is already loaded at module level above
-    print("✅ Trains data already loaded")
+    print("[OK] Trains data already loaded")
     
     # Initialize agents
-    print("\n🤖 Initializing PRAL agents...")
-    print("   • IntentAgent")
-    print("   • TrainSearchAgent")
-    print("   • RankingAgent")
-    print("   • BookingExecutionAgent")
-    print("   • TatkalSchedulerAgent")
-    print("   • PaymentAgent")
-    print("   • WaitlistAgent")
-    print("   • PDFAgent")
-    print("   • ExplanationAgent")
-    print("   • MLComparisonAgent")
-    print("✅ All agents initialized")
+    print("\n[*] Initializing PRAL agents...")
+    print("   - IntentAgent")
+    print("   - TrainSearchAgent")
+    print("   - RankingAgent")
+    print("   - BookingExecutionAgent")
+    print("   - TatkalSchedulerAgent")
+    print("   - PaymentAgent")
+    print("   - WaitlistAgent")
+    print("   - PDFAgent")
+    print("   - ExplanationAgent")
+    print("   - MLComparisonAgent")
+    print("[OK] All agents initialized")
     
     print("\n" + "="*60)
-    print("✅ SYSTEM READY")
+    print("[OK] SYSTEM READY")
     print("="*60 + "\n")
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Close database connection on shutdown"""
     await MongoDBClient.close_db()
-    print("🤖 PRAL agents initialized")
+    print("[*] PRAL agents shutdown")
 
 
 # ==================== TEST/HEALTH ROUTES ====================
@@ -213,14 +213,14 @@ async def register(request: UserRegisterRequest):
     if users_collection is not None:
         try:
             await users_collection.insert_one(user_data)
-            print(f"✅ User registered in MongoDB: {request.email}")
+            print(f"[OK] User registered in MongoDB: {request.email}")
         except Exception as e:
             print(f"⚠️  MongoDB save failed: {e}, using fallback")
             users_db[request.email] = user_data
     else:
         # Use fallback in-memory storage
         users_db[request.email] = user_data
-        print(f"⚠️  MongoDB unavailable, stored in memory: {request.email}")
+        print(f"[WARN] MongoDB unavailable, stored in memory: {request.email}")
     
     return UserResponse(
         user_id=user_id,
@@ -360,12 +360,12 @@ async def sync_to_mongo():
                 # Insert the user
                 await users_collection.insert_one(user_data)
                 synced_count += 1
-                print(f"✅ Synced user: {email}")
+                print(f"[OK] Synced user: {email}")
             else:
-                print(f"⏭️  User already exists: {email}")
+                print(f"[*] User already exists: {email}")
         except Exception as e:
             failed_count += 1
-            print(f"❌ Failed to sync {email}: {e}")
+            print(f"[ERROR] Failed to sync {email}: {e}")
     
     return {
         "message": "Sync complete",
@@ -434,7 +434,7 @@ async def update_profile(request: Dict[str, Any]):
                 mongo_user.pop("_id", None)
                 return mongo_user
         except Exception as e:
-            print(f"⚠️  MongoDB profile update failed: {e}")
+            print(f"[WARN] MongoDB profile update failed: {e}")
 
     # Fallback in-memory update/create
     target_email = None
@@ -572,7 +572,7 @@ async def search_trains(
             "message": message,
         }
     except Exception as e:
-        print(f"❌ Train search error: {str(e)}")
+        print(f"[ERROR] Train search error: {str(e)}")
         return {
             "error": f"Search failed: {str(e)}",
             "from_station": from_station,
@@ -769,7 +769,7 @@ async def create_normal_booking(request: NormalBookingRequest):
     if bookings_collection is not None:
         try:
             await bookings_collection.insert_one(booking_data)
-            print(f"✅ Booking saved to MongoDB: {booking_id}")
+            print(f"[OK] Booking saved to MongoDB: {booking_id}")
         except Exception as e:
             print(f"⚠️  MongoDB save failed: {e}, using fallback")
     
@@ -785,7 +785,7 @@ async def create_normal_booking(request: NormalBookingRequest):
                 }}
             )
             user_found = True
-            print(f"✅ User booking stats updated in MongoDB: {request.user_id}")
+            print(f"[OK] User booking stats updated in MongoDB: {request.user_id}")
         except Exception as e:
             print(f"⚠️  MongoDB update failed: {e}")
     
@@ -866,9 +866,9 @@ async def create_booking_record(request: Dict[str, Any]):
         if bookings_collection is not None:
             try:
                 await bookings_collection.insert_one(booking_data)
-                print(f"✅ Payment booking saved to MongoDB: {booking_id}")
+                print(f"[OK] Payment booking saved to MongoDB: {booking_id}")
             except Exception as e:
-                print(f"⚠️  MongoDB save failed for payment booking: {e}")
+                print(f"[WARN] MongoDB save failed for payment booking: {e}")
 
         # Update user stats in MongoDB first.
         if users_collection is not None:
@@ -887,7 +887,7 @@ async def create_booking_record(request: Dict[str, Any]):
                     upsert=False,
                 )
             except Exception as e:
-                print(f"⚠️  MongoDB user stats update failed: {e}")
+                print(f"[WARN] MongoDB user stats update failed: {e}")
 
         # In-memory fallback stats update.
         for _, user in users_db.items():
@@ -913,7 +913,7 @@ async def create_booking_record(request: Dict[str, Any]):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"⚠️  Payment booking create recovery path: {e}")
+        print(f"[WARN] Payment booking create recovery path: {e}")
         fallback_id = str(uuid.uuid4())
         fallback_pnr = f"AB{datetime.now().strftime('%y%m%d')}{fallback_id[-4:]}"
         fallback_record = {
@@ -1025,7 +1025,7 @@ async def create_tatkal_booking(request: TatkalBookingRequest):
     if bookings_collection is not None:
         try:
             await bookings_collection.insert_one(tatkal_booking_data)
-            print(f"✅ Tatkal booking saved to MongoDB: {tatkal_id}")
+            print(f"[OK] Tatkal booking saved to MongoDB: {tatkal_id}")
         except Exception as e:
             print(f"⚠️  MongoDB save failed: {e}, using fallback")
 
@@ -1167,9 +1167,9 @@ async def get_booking_history(user_id: str):
                 if "_id" in booking:
                     booking["_id"] = str(booking["_id"])
                 user_bookings.append(booking)
-            print(f"✅ Loaded {len(user_bookings)} bookings from MongoDB for user {user_id}")
+            print(f"[OK] Loaded {len(user_bookings)} bookings from MongoDB for user {user_id}")
         except Exception as e:
-            print(f"⚠️  MongoDB query failed: {e}, using fallback")
+            print(f"[WARN] MongoDB query failed: {e}, using fallback")
             user_bookings = []
     
     # Fallback to in-memory if MongoDB unavailable or no results
@@ -1222,9 +1222,9 @@ async def cancel_booking(booking_id: str, request: CancellationRequest):
                 {"booking_id": booking_id},
                 {"$set": {"status": "CANCELLED", "cancelled_at": booking["cancelled_at"]}}
             )
-            print(f"✅ Booking cancellation saved to MongoDB: {booking_id}")
+            print(f"[OK] Booking cancellation saved to MongoDB: {booking_id}")
         except Exception as e:
-            print(f"⚠️  MongoDB update failed: {e}")
+            print(f"[WARN] MongoDB update failed: {e}")
     
     # RELEASE SEATS if booking was confirmed
     upgraded_bookings = []
@@ -1400,6 +1400,7 @@ async def get_dashboard_stats():
 
     if bookings_collection is not None:
         try:
+            # Add timeout to prevent hanging on MongoDB connection issues
             pipeline = [
                 {
                     "$project": {
@@ -1423,16 +1424,23 @@ async def get_dashboard_stats():
                 },
             ]
 
-            result = await bookings_collection.aggregate(pipeline).to_list(length=1)
-            if result:
-                row = result[0]
-                stats["total_bookings"] = int(row.get("total_bookings", 0) or 0)
-                stats["total_passengers"] = int(row.get("total_passengers", 0) or 0)
-                stats["total_revenue"] = int(row.get("total_revenue", 0) or 0)
-                stats["total_tatkal_bookings"] = int(row.get("total_tatkal_bookings", 0) or 0)
-                return stats
+            # Use asyncio.wait_for with a 2-second timeout
+            try:
+                result = await asyncio.wait_for(
+                    bookings_collection.aggregate(pipeline).to_list(length=1),
+                    timeout=2.0
+                )
+                if result:
+                    row = result[0]
+                    stats["total_bookings"] = int(row.get("total_bookings", 0) or 0)
+                    stats["total_passengers"] = int(row.get("total_passengers", 0) or 0)
+                    stats["total_revenue"] = int(row.get("total_revenue", 0) or 0)
+                    stats["total_tatkal_bookings"] = int(row.get("total_tatkal_bookings", 0) or 0)
+                    return stats
+            except asyncio.TimeoutError:
+                print("[WARN] MongoDB query timeout - using fallback")
         except Exception as e:
-            print(f"⚠️  MongoDB dashboard aggregation failed: {e}")
+            print(f"[WARN] MongoDB dashboard aggregation failed: {e}")
 
     # In-memory fallback aggregation.
     for b in bookings_db.values():
@@ -1590,4 +1598,4 @@ async def http_exception_handler(request, exc):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=10000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
